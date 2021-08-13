@@ -1,15 +1,14 @@
 package net.entity;
 
 
-import java.io.BufferedWriter;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiConsumer;
-import net.entity.StateMachine;
+
 
 
 public class Server extends Thread{

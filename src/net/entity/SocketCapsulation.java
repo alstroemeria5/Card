@@ -8,12 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.Collection;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiPredicate;
+
 
 public class SocketCapsulation implements FunctionalInterface{
 	public Socket socket;

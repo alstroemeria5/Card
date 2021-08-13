@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 
@@ -31,6 +32,7 @@ public class Server extends Thread{
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}};
+	private static StateMachine state_machine;
 	private static int port_de_server;
 	public static int get_server_port() {
 		return port_de_server;
@@ -40,40 +42,41 @@ public class Server extends Thread{
 	}
 	static {
 		set_server_port(1988);
+		state_machine=new StateMachine();
 	}
 	public static void main(String[] args) {
 		Server server=new Server();
 		server.setPriority(MAX_PRIORITY);
 		server.start();
-		
+		Collection<Timer> timer_queue=new CopyOnWriteArrayList<Timer>();
 
 		while(true) {
 			try {
 				Socket socket=server.socket_de_server.accept();
-				socket.setSoTimeout(30*1000);
 				System.out.printf("Client from %s.\n",socket.getInetAddress().toString());
-				BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//				byte[] b=new byte[1024];
-//				int length;
-				String data="";
-				data=in.readLine();
-				if(data.equals("Hello World,RoyaumeEric!")) {
-					BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-					SingleResponse response=new SingleResponse(ResponseType.ClientGrant,"Welcome to RoyaumeEric!!!");
-					JSONObject json_response=new JSONObject(response);
-					server.writeout.accept(out,json_response.toString()); 
-					out.flush();
-					synchronized(server.socket_ensemble) {
-						server.socket_ensemble.add(socket);
-					}
-				}
-				else {
-					BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream());
-					out.write(("You don't know the passphrase. Get the fuckout???"+"\n").getBytes());
-					out.close();
-					in.close();
-					socket.close();
-				}
+				SocketCapsulation sockcap=new SocketCapsulation(socket);
+				JeuSocketCapsulation jeusockcap=new JeuSocketCapsulation(sockcap,JeuState.WaitForSocketAuthentication, 30000L, new Timer(), timer_queue,server.jeusockcap_ensemble);
+				server.jeusockcap_ensemble.add(jeusockcap);
+//				
+////				byte[] b=new byte[1024];
+////				int length;
+//				String data="";
+//				data=sockcap.bufinsreader.readLine();
+//				if(data.equals("Hello World,RoyaumeEric!")) {
+//					SingleResponse response=new SingleResponse(ResponseType.ClientGrant,"Welcome to RoyaumeEric!!!");
+//					JSONObject json_response=new JSONObject(response);
+//					server.writeout.accept(sockcap.bufoutwriter,json_response.toString()); 
+//					sockcap.bufoutwriter.flush();
+//					synchronized(server.socket_ensemble) {
+//						server.socket_ensemble.add(sockcap.socket);
+//					}
+//				}
+//				else {
+//					sockcap.bufoutwriter.write("You don't know the passphrase. Get the fuckout???"+"\n");
+//					sockcap.bufoutwriter.close();
+//					sockcap.bufinsreader.close();
+//					socket.close();
+//				}
 			}
 			catch(IOException e) {
 				e.printStackTrace();
@@ -81,9 +84,9 @@ public class Server extends Thread{
 		}
 	}
 	public ServerSocket socket_de_server;
-	public CopyOnWriteArrayList<Socket> socket_ensemble;
+	public CopyOnWriteArrayList<JeuSocketCapsulation> jeusockcap_ensemble;
 	public Server() {
-		socket_ensemble=new CopyOnWriteArrayList<Socket>();
+		this.jeusockcap_ensemble=new CopyOnWriteArrayList<JeuSocketCapsulation>();
 		try {
 			socket_de_server=new ServerSocket(get_server_port());
 		}
@@ -95,21 +98,28 @@ public class Server extends Thread{
 	}
 	public void run() {
 		while(true) {
-			synchronized(socket_ensemble) {
-				for(Socket socket:socket_ensemble) {
-					try {
-						if(socket.getInputStream().available()>0) {
-							BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-							String data=in.readLine();
-							BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-							writeout.accept(out, data);
-							out.flush();
-						}
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
+			synchronized(jeusockcap_ensemble) {
+				state_machine.interwine(jeusockcap_ensemble);
+//				for(JeuSocketCapsulation jeusocketcap:jeusockcap_ensemble) {
+//					try {
+//						if(!socket.isClosed()) {
+//							if(socket.getInputStream().available()>0) {
+//								BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//								String data=in.readLine();
+//								BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+//								writeout.accept(out, data);
+//								out.flush();
+//							}
+//							
+//						}
+//						else {
+//							continue;
+//						}
+//					}
+//					catch (IOException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}	
 			}
 		}
 	}
